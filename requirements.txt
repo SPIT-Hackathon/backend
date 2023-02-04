@@ -54,3 +54,4 @@ certifi
 dnspython
 Flask-RESTful
 flask-cors
+pywhisper
