@@ -1,8 +1,10 @@
 flask
-prophet
 gunicorn
 pymongo
 certifi
 dnspython
 Flask-RESTful
 flask-cors
+Flask-PyMongo
+python-dotenv
+Flask-Bcrypt
