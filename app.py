@@ -156,6 +156,31 @@ def get_transcripts():
     except Exception as e:
         return {'message': 'Server Error' + str(e)}, 500
 
+
+@app.route('/getMergedChunks', methods=['GET'])
+def get_merged_chunks():
+    try:
+        data = request.args
+        user_id = data['user_id']
+        obj = Transcriptions.find({'user_id': user_id},{"chunks":1})
+        obj = list(obj)
+        # print(obj)
+        for i in range(len(obj)):
+            obj[i]['_id'] = str(obj[i]['_id'])
+            merged = ""
+            for chunk in obj[i]['chunks']:
+                merged = merged + chunk
+                
+            del obj[i]['chunks']
+            obj[i]['merged_chunks'] = merged
+
+
+        return {"transcripts":obj}, 200
+    
+    except Exception as e:
+        return {'message': 'Server Error' + str(e)}, 500
+
+
 @app.route('/savenotes', methods=['POST'])
 def save_notes():
     try:
