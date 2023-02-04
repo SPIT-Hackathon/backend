@@ -107,26 +107,35 @@ def loginUser():
     except Exception as e:
         return {'message': 'Server Error' + str(e)}, 500
 
-@app.route('/create_notes', methods=['POST'])
+@app.route('/create', methods=['POST'])
 def create_notes():
     # Catch the image file from a POST request
-    
-    video_url = request.form.get("video_url")
-    print(video_url)
+    try:
+        data = request.get_json()
+        print("data: ", data)
+        video_url = data["video_url"]
+        user_id = str(data["user_id"])
+        chapter_name = str(data["chapter_name"])
+        subject_name = str(data["subject_name"])
 
-    transcription,title = get_transcription(video_url)
-    chunks = get_chunks(transcription['text'])
+        print(video_url)
 
-    summarries = []
+        transcription,title = get_transcription(video_url)
+        chunks = get_chunks(transcription['text'])
 
-    for para in chunks:
-      summary = get_summary(para)
-      summarries.append(summary)    
-    obj = {'title':str(title),'chunks':str(chunks),'summary': str(summarries) }
-    Transcriptions.insert_one(obj)
-    # Return on a JSON format
-    print(obj)
-    return obj
+        summarries = []
+
+        for para in chunks:
+            summary = get_summary(para)
+            summarries.append(summary)    
+        obj = {'title':str(title),'chunks':str(chunks),'summary': str(summarries), 'user_id': user_id, 'chapter_name': chapter_name, 'video_url': video_url }
+        Transcriptions.insert_one(obj)
+        # Return on a JSON format
+        # obj = {'title':str(title),'chunks':str(chunks),'summary': str(summarries), 'user_id': user_id, 'chapter_name': chapter_name, 'video_url': video_url }
+        # print(obj)
+        return {"message": "transcript generated successfully"}, 200
+    except Exception as e:
+        return {'message': 'Server Error' + str(e)}, 500
 
 @app.route('/users', methods=['GET'])
 def get_users():
