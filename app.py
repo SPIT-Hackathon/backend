@@ -4,7 +4,7 @@ from flask import jsonify
 from flask_cors import CORS, cross_origin
 from flask_restful import Api, Resource
 from flask_bcrypt import Bcrypt
-
+from flask_ngrok import run_with_ngrok
 from flask_pymongo import PyMongo
 
 from flask_mail import Mail
@@ -13,18 +13,21 @@ from flask_mail import Message
 import os
 import numpy as np
 import io
+import json
 import logging
 
 from utilities import *
 
 from dotenv import load_dotenv
+
+
 load_dotenv()
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 app.logger.setLevel('INFO')
 CORS(app)
-
+run_with_ngrok(app)
 bcrypt = Bcrypt(app)
 
 app.config['MONGO_URI'] = os.environ.get('MONGO_URI')
@@ -126,9 +129,9 @@ def create_notes():
         summarries = []
 
         for para in chunks:
-            summary = get_summary(para)
+            summary = get_summary(para)[0]
             summarries.append(summary)    
-        obj = {'title':str(title),'chunks':str(chunks),'summary': str(summarries), 'user_id': user_id, 'chapter_name': chapter_name, 'video_url': video_url }
+        obj = {'title':str(title),'chunks':chunks,'summary': summarries, 'user_id': user_id, 'chapter_name': chapter_name, 'video_url': video_url,'subject_name':subject_name }
         Transcriptions.insert_one(obj)
         # Return on a JSON format
         # obj = {'title':str(title),'chunks':str(chunks),'summary': str(summarries), 'user_id': user_id, 'chapter_name': chapter_name, 'video_url': video_url }
@@ -137,6 +140,37 @@ def create_notes():
     except Exception as e:
         return {'message': 'Server Error' + str(e)}, 500
 
+@app.route('/gettranscripts', methods=['GET'])
+def get_transcripts():
+    try:
+        data = request.args
+        user_id = data['user_id']
+        obj = Transcriptions.find({'user_id': user_id})
+        obj = list(obj)
+        print(obj)
+        for i in range(len(obj)):
+            obj[i]['_id'] = str(obj[i]['_id'])
+
+        return {"transcripts":obj}, 200
+    
+    except Exception as e:
+        return {'message': 'Server Error' + str(e)}, 500
+
+@app.route('/savenotes', methods=['POST'])
+def save_notes():
+    try:
+        data = request.get_json()
+        print("data: ", data)
+        user_id = str(data["user_id"])
+        transcript_id = str(data["transcript_id"])
+        notes = data["notes"]
+        obj = {'user_id': user_id, 'transcript_id': transcript_id, 'notes': notes }
+
+        Transcriptions.insert_one(obj)
+        return {"message": "notes saved successfully"}, 200
+    except Exception as e:
+        return {'message': 'Server Error' + str(e)}, 500
+    
 @app.route('/users', methods=['GET'])
 def get_users():
     obj = Users.find_one({'email': 'user@gmail.com'})
@@ -146,4 +180,4 @@ def get_users():
 
 
 if __name__ == '__main__':
-  app.run(debug=True)
+  app.run()
