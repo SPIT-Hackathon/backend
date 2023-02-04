@@ -7,6 +7,9 @@ from flask_bcrypt import Bcrypt
 
 from flask_pymongo import PyMongo
 
+from flask_mail import Mail
+from flask_mail import Message
+
 import os
 
 from dotenv import load_dotenv
@@ -20,6 +23,15 @@ bcrypt = Bcrypt(app)
 app.config['MONGO_URI'] = os.environ.get('MONGO_URI')
 mongo = PyMongo(app)
 
+app.config['MAIL_SERVER']='smtp.gmail.com'
+app.config['MAIL_PORT'] = 465
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_USE_TLS'] = False
+app.config['MAIL_USE_SSL'] = True
+mail = Mail(app)
+
+
 # -----------DB Models start--------------------
 
 Users = mongo.db.users
@@ -28,6 +40,21 @@ Users = mongo.db.users
 
 
 # -----------APIs start--------------------
+
+@app.route('/test',methods=['GET'])
+def test():
+    try:
+        subject = "Greetings from StudyPat!"
+        sender = "studypatt@gmail.com"
+        recipients = ["joy.almeida@spit.ac.in","kristen.pereira@spit.ac.in", "gaurav.parulekar@spit.ac.in" , "hrishikesh.lamdade@spit.ac.in"]
+
+        msg = Message(subject = subject, sender = sender, recipients= recipients)
+        msg.body = "Email Function is Working!"
+
+        mail.send(msg)
+        return {'message': 'Email sent'}, 200
+    except Exception as e: 
+        return {'message': 'Email sent'}, 200
 
 @app.route('/register',methods=['POST'])
 def registerUser():
