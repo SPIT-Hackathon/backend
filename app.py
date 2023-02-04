@@ -11,11 +11,18 @@ from flask_mail import Mail
 from flask_mail import Message
 
 import os
+import numpy as np
+import io
+import logging
+
+from utilities import *
 
 from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
+logging.basicConfig(level=logging.INFO)
+app.logger.setLevel('INFO')
 CORS(app)
 
 bcrypt = Bcrypt(app)
@@ -35,6 +42,7 @@ mail = Mail(app)
 # -----------DB Models start--------------------
 
 Users = mongo.db.users
+Transcriptions = mongo.db.transcriptions
 
 # -----------DB Models end--------------------
 
@@ -99,7 +107,32 @@ def loginUser():
     except Exception as e:
         return {'message': 'Server Error' + str(e)}, 500
 
+@app.route('/create_notes', methods=['POST'])
+def create_notes():
+    # Catch the image file from a POST request
+    
+    video_url = request.form.get("video_url")
+    print(video_url)
 
+    transcription,title = get_transcription(video_url)
+    chunks = get_chunks(transcription['text'])
+
+    summarries = []
+
+    for para in chunks:
+      summary = get_summary(para)
+      summarries.append(summary)    
+    obj = {'title':str(title),'chunks':str(chunks),'summary': str(summarries) }
+    Transcriptions.insert_one(obj)
+    # Return on a JSON format
+    print(obj)
+    return obj
+
+@app.route('/users', methods=['GET'])
+def get_users():
+    obj = Users.find_one({'email': 'user@gmail.com'})
+
+    return obj
 # -----------APIs end--------------------
 
 
