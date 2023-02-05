@@ -14,6 +14,7 @@ import os
 import numpy as np
 import io
 import logging
+from bson.objectid import ObjectId
 
 from utilities import *
 
@@ -46,20 +47,35 @@ Transcriptions = mongo.db.transcriptions
 
 # -----------DB Models end--------------------
 
+# -----------Helpers start--------------------
+
+def sendEmail(subject, recipients, body):
+    sender = "studypatt@gmail.com"
+
+    msg = Message(subject = subject, sender = sender, recipients= recipients)
+    msg.body = body
+
+    mail.send(msg)
+    print("mail sent")
+# -----------Helpers start--------------------
 
 # -----------APIs start--------------------
 
 @app.route('/test',methods=['GET'])
 def test():
     try:
-        subject = "Greetings from StudyPat!"
-        sender = "studypatt@gmail.com"
-        recipients = ["joy.almeida@spit.ac.in","kristen.pereira@spit.ac.in", "gaurav.parulekar@spit.ac.in" , "hrishikesh.lamdade@spit.ac.in"]
+        # subject = "Sign Up Confirmation | StudyPat!"
+        # sender = "studypatt@gmail.com"
+        # recipients = ["joy.almeida@spit.ac.in","kristen.pereira@spit.ac.in", "gaurav.parulekar@spit.ac.in" , "hrishikesh.lamdade@spit.ac.in"]
 
-        msg = Message(subject = subject, sender = sender, recipients= recipients)
-        msg.body = "Email Function is Working!"
+        # msg = Message(subject = subject, sender = sender, recipients= recipients)
+        # msg.body = "Greetings from StudyPat! \n\n Your Account has been successfully registered to StudyPat!"
 
-        mail.send(msg)
+        # mail.send(msg)
+        data = {
+            "email": "joy.almeida@spit.ac.in"
+        }
+        sendEmail("Sign Up Confirmation | StudyPat!", [data['email']], "Greetings from StudyPat! \n\n Your Account has been successfully registered to StudyPat!")
         return {'message': 'Email sent'}, 200
     except Exception as e: 
         return {'message': 'Email sent'}, 200
@@ -77,6 +93,7 @@ def registerUser():
                 'mobile': data['mobile'],
             }
             Users.insert_one(obj)
+            sendEmail("Sign Up Confirmation | StudyPat!", [data['email']], "Greetings from StudyPat! \n\n Your Account has been successfully registered to StudyPat!")
             return {
                 'email': data['email'],
                 'message': 'User Created Successfully'
@@ -133,7 +150,25 @@ def create_notes():
         # Return on a JSON format
         # obj = {'title':str(title),'chunks':str(chunks),'summary': str(summarries), 'user_id': user_id, 'chapter_name': chapter_name, 'video_url': video_url }
         # print(obj)
+        user_obj = Users.find_one({'_id': ObjectId(user_id)})
+        print("User Email: ",str(user_obj['email']))
+        sendEmail("Greeting | StudyPat!", [user_obj['email']], "Greetings from StudyPat! The transcript for your video, "+str(title)+" is generated successfully")
         return {"message": "transcript generated successfully"}, 200
+    except Exception as e:
+        return {'message': 'Server Error' + str(e)}, 500
+
+@app.route('/gettranscripts', methods=['GET'])
+def get_transcripts():
+    try:
+        data = request.args
+        user_id = data['user_id']
+        obj = Transcriptions.find({'user_id': user_id})
+        obj = list(obj)
+        for i in range(len(obj)):
+            obj[i]['_id'] = str(obj[i]['_id'])
+
+        return {"transcripts":obj}, 200
+    
     except Exception as e:
         return {'message': 'Server Error' + str(e)}, 500
 
@@ -142,6 +177,29 @@ def get_users():
     obj = Users.find_one({'email': 'user@gmail.com'})
 
     return obj
+
+
+@app.route('/recommendvideos', methods=['GET'])
+def get_recommended_videos():
+    try:
+        data = request.args
+        user_id = data['user_id']
+        obj = Transcriptions.find({'user_id': user_id},{"chunks":1})
+        obj = list(obj)
+        # print(obj)
+        merged = []
+        for i in range(len(obj)):
+            obj[i]['_id'] = str(obj[i]['_id'])
+            temp = ""
+            for chunk in obj[i]['chunks']:
+                temp = temp + chunk
+            merged.append(temp)
+
+        recom = get_recommendations(merged)
+        print(recom)
+        return {"recommendations":recom}, 200
+    except Exception as e:
+        return {'message': 'Server Error' + str(e)}, 500
 # -----------APIs end--------------------
 
 

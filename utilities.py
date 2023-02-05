@@ -10,6 +10,9 @@ import pywhisper
 import pandas as pd
 from transformers import pipeline
 from pathlib import Path
+
+from youtubesearchpython import VideosSearch
+import yake
 # Get the transcription of the video
 
 
@@ -128,3 +131,29 @@ def get_chunks(corpus):
     else:
         sent = sent + s + '. '
   return res
+
+
+def get_recommendations(merged):
+
+  keyws = [] # array for keystores
+
+  for summ in merged:
+    kw_extractor = yake.KeywordExtractor(top=3, stopwords=None)
+    keywords = kw_extractor.extract_keywords(summ)
+    keystr = keywords[0][0] +" "+ keywords[1][0] + " " + keywords[2][0];
+    keyws.append(keystr)
+
+  
+  # get recoms from keys
+  videos = []
+  for i in keyws : 
+    
+    videosSearch = VideosSearch(i, limit = 5)
+    for v in videosSearch.result()['result']:
+        new_obj = {}
+        new_obj['title'] = v['title']
+        new_obj['link'] = v['link']
+        
+        videos.append(new_obj)
+
+  return videos
