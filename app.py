@@ -170,7 +170,7 @@ def get_merged_chunks():
             merged = ""
             for chunk in obj[i]['chunks']:
                 merged = merged + chunk
-                
+
             del obj[i]['chunks']
             obj[i]['merged_chunks'] = merged
 
@@ -180,6 +180,29 @@ def get_merged_chunks():
     except Exception as e:
         return {'message': 'Server Error' + str(e)}, 500
 
+
+@app.route('/recommend_videos', methods=['GET'])
+def get_recommended_videos():
+    try:
+        data = request.args
+        user_id = data['user_id']
+        obj = Transcriptions.find({'user_id': user_id},{"chunks":1})
+        obj = list(obj)
+        # print(obj)
+        merged = []
+        for i in range(len(obj)):
+            obj[i]['_id'] = str(obj[i]['_id'])
+            temp = ""
+            for chunk in obj[i]['chunks']:
+                temp = temp + chunk
+            merged.append(temp)
+
+        recom = get_recommendations(merged)
+        print(recom)
+        return {"recommendations":recom}, 200
+    
+    except Exception as e:
+        return {'message': 'Server Error' + str(e)}, 500
 
 @app.route('/savenotes', methods=['POST'])
 def save_notes():
